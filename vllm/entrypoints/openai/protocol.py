@@ -186,3 +186,19 @@ class ChatCompletionStreamResponse(BaseModel):
     choices: List[ChatCompletionResponseStreamChoice]
     usage: Optional[UsageInfo] = Field(
         default=None, description="data about request and response")
+
+
+class TokenizerRequest(BaseModel):
+    input: List[str]
+    spaces_between_special_tokens: Optional[bool] = True
+
+
+class TokensObject(BaseModel):
+    tokens: List[int] = Field(default_factory=list)
+
+
+class TokenizerResponse(BaseModel):
+    id: str = Field(default_factory=lambda: f"tokenizer-{random_uuid()}")
+    object: str = "tokens"
+    created: int = Field(default_factory=lambda: int(time.time()))
+    tokenized: List[TokensObject] = Field(default_factory=list)

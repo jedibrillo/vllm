@@ -27,7 +27,8 @@ from vllm.entrypoints.openai.protocol import (
     ChatCompletionRequest, ChatCompletionResponse,
     ChatCompletionResponseChoice, ChatCompletionResponseStreamChoice,
     ChatCompletionStreamResponse, ChatMessage, DeltaMessage, ErrorResponse,
-    LogProbs, ModelCard, ModelList, ModelPermission, UsageInfo)
+    LogProbs, ModelCard, ModelList, ModelPermission, UsageInfo,
+    TokenizerRequest, TokenizerResponse)
 from vllm.logger import init_logger
 from vllm.outputs import RequestOutput
 from vllm.sampling_params import SamplingParams
@@ -142,7 +143,7 @@ async def check_length(
     request: Union[ChatCompletionRequest, CompletionRequest],
     prompt: Optional[str] = None,
     prompt_ids: Optional[List[int]] = None
-) -> Tuple[List[int], Optional[JSONResponse]]:
+) -> Tuple[Response, List[int], Optional[JSONResponse]]:
     assert (not (prompt is None and prompt_ids is None)
             and not (prompt is not None and prompt_ids is not None)
             ), "Either prompt or prompt_ids should be provided."
@@ -153,7 +154,7 @@ async def check_length(
     if request.max_tokens is None:
         request.max_tokens = max_model_len - token_num
     if token_num + request.max_tokens > max_model_len:
-        return input_ids, create_error_response(
+        return request, input_ids, create_error_response(
             HTTPStatus.BAD_REQUEST,
             f"This model's maximum context length is {max_model_len} tokens. "
             f"However, you requested {request.max_tokens + token_num} tokens "
@@ -162,7 +163,7 @@ async def check_length(
             f"Please reduce the length of the messages or completion.",
         )
     else:
-        return input_ids, None
+        return request, input_ids, None
 
 
 @app.get("/health")
@@ -247,7 +248,7 @@ async def create_chat_completion(request: ChatCompletionRequest,
         logger.error(f"Error in applying chat template from request: {str(e)}")
         return create_error_response(HTTPStatus.BAD_REQUEST, str(e))
 
-    token_ids, error_check_ret = await check_length(request, prompt=prompt)
+    request, token_ids, error_check_ret = await check_length(request, prompt=prompt)
     if error_check_ret is not None:
         return error_check_ret
 
@@ -492,9 +493,9 @@ async def create_completion(request: CompletionRequest, raw_request: Request):
         prompt = request.prompt
 
     if use_token_ids:
-        _, error_check_ret = await check_length(request, prompt_ids=prompt)
+        request, _, error_check_ret = await check_length(request, prompt_ids=prompt)
     else:
-        token_ids, error_check_ret = await check_length(request, prompt=prompt)
+        request, token_ids, error_check_ret = await check_length(request, prompt=prompt)
     if error_check_ret is not None:
         return error_check_ret
 
@@ -712,7 +713,18 @@ async def create_completion(request: CompletionRequest, raw_request: Request):
 
     return response
 
+@app.post("/v1/tokenizer")
+async def create_tokens(request: TokenizerRequest, raw_request: Request):
+    """Tokenizer API to turn text into tokens. This is perhaps better than custom encoding for tiktoken."""
+    try:
+        spaces_between_special_tokens = request.spaces_between_special_tokens
+        tokenized = tokenizer.tokenize(request.text,
+                                       spaces_between_special_tokens)
+    except ValueError as e:
+        return create_error_response(HTTPStatus.BAD_REQUEST, str(e))
 
+    return TokenizerResponse(tokenized=tokenized)
+    
 if __name__ == "__main__":
     args = parse_args()
 
