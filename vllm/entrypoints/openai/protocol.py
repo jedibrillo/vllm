@@ -189,8 +189,7 @@ class ChatCompletionStreamResponse(BaseModel):
 
 
 class TokenizerRequest(BaseModel):
-    input: List[str]
-    spaces_between_special_tokens: Optional[bool] = True
+    input: str
 
 
 class TokensObject(BaseModel):

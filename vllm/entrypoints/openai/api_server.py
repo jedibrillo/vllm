@@ -717,9 +717,7 @@ async def create_completion(request: CompletionRequest, raw_request: Request):
 async def create_tokens(request: TokenizerRequest, raw_request: Request):
     """Tokenizer API to turn text into tokens. This is perhaps better than custom encoding for tiktoken."""
     try:
-        spaces_between_special_tokens = request.spaces_between_special_tokens
-        tokenized = tokenizer.tokenize(request.text,
-                                       spaces_between_special_tokens)
+        tokenized = tokenizer(request.input).input_ids
     except ValueError as e:
         return create_error_response(HTTPStatus.BAD_REQUEST, str(e))
 
