@@ -739,7 +739,7 @@ async def create_tokens(request: TokenizerRequest, raw_request: Request):
     except ValueError as e:
         return create_error_response(HTTPStatus.BAD_REQUEST, str(e))
 
-    return TokenizerResponse(tokenized=tokenized)
+    return TokenizerResponse(tokenized=[tokenized])
     
 if __name__ == "__main__":
     args = parse_args()

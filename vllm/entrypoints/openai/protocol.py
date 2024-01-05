@@ -200,4 +200,4 @@ class TokenizerResponse(BaseModel):
     id: str = Field(default_factory=lambda: f"tokenizer-{random_uuid()}")
     object: str = "tokens"
     created: int = Field(default_factory=lambda: int(time.time()))
-    tokenized: List[TokensObject] = Field(default_factory=list)
+    tokenized: List[TokensObject]
