@@ -189,15 +189,11 @@ class ChatCompletionStreamResponse(BaseModel):
 
 
 class TokenizerRequest(BaseModel):
-    input: str
-
-
-class TokensObject(BaseModel):
-    tokens: List[int] = Field(default_factory=list)
+    input: List[str]
 
 
 class TokenizerResponse(BaseModel):
     id: str = Field(default_factory=lambda: f"tokenizer-{random_uuid()}")
     object: str = "tokens"
     created: int = Field(default_factory=lambda: int(time.time()))
-    tokenized: List[TokensObject]
+    tokenized: List[List[int]]
